@@ -26,7 +26,7 @@ const ResetPasswordBodyText = () => {
     <div className="flex flex-col space-y-4">
       <p>{localize('com_auth_reset_password_if_email_exists')}</p>
       <a
-        className="inline-flex text-sm font-medium text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+        className="inline-flex text-sm font-medium text-[#B6862C] transition-colors hover:text-[#c99635] dark:text-[#B6862C] dark:hover:text-[#c99635]"
         href={loginPage()}
       >
         {localize('com_auth_back_to_login')}
@@ -108,12 +108,12 @@ function RequestPasswordReset() {
               },
             })}
             aria-invalid={!!errors.email}
-            className="webkit-dark-styles transition-color peer w-full rounded-2xl border border-border-light bg-surface-primary px-3.5 pb-2.5 pt-3 text-text-primary duration-200 focus:border-green-500 focus:outline-none"
+            className="webkit-dark-styles transition-color peer w-full rounded-2xl border border-border-light bg-surface-primary px-3.5 pb-2.5 pt-3 text-text-primary duration-200 focus:border-[#B6862C] focus:outline-none"
             placeholder=" "
           />
           <label
             htmlFor="email"
-            className="absolute -top-2 left-2 z-10 bg-white px-2 text-sm text-gray-600 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:text-green-600 dark:bg-gray-900 dark:text-gray-400 dark:peer-focus:text-green-500"
+            className="absolute -top-2 left-2 z-10 bg-white px-2 text-sm text-gray-600 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:-top-2 peer-focus:text-sm peer-focus:text-[#B6862C] dark:bg-gray-900 dark:text-gray-400 dark:peer-focus:text-[#B6862C]"
           >
             {localize('com_auth_email_address')}
           </label>
@@ -136,7 +136,7 @@ function RequestPasswordReset() {
         </Button>
         <a
           href={loginPage()}
-          className="block text-center text-sm font-medium text-green-600 transition-colors hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+          className="block text-center text-sm font-medium text-[#B6862C] transition-colors hover:text-[#c99635] dark:text-[#B6862C] dark:hover:text-[#c99635]"
         >
           {localize('com_auth_back_to_login')}
         </a>

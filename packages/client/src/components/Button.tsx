@@ -17,7 +17,7 @@ const buttonVariants = cva(
         ghost: 'hover:bg-surface-hover hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
         // hardcoded text color because of WCAG contrast issues (text-white)
-        submit: 'bg-surface-submit text-white hover:bg-surface-submit-hover',
+        submit: 'bg-[#081E3F] text-white hover:bg-[#0a2449]',
       },
       size: {
         default: 'h-10 px-4 py-2',
