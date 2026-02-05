@@ -5,9 +5,33 @@ This guide provides step-by-step instructions for customizing the LibreChat logo
 ## Prerequisites
 
 - LibreChat fork or clone on your local machine
+- **LibreChat Version**: v0.8.2 (these instructions are tested on v0.8.2)
 - Docker and Docker Compose installed
 - Git configured with appropriate credentials
 - Basic understanding of Docker and command line operations
+
+### Version Compatibility
+
+**Tested on**: LibreChat v0.8.2
+
+**For fresh installs from the main LibreChat repository**:
+- These instructions work out-of-the-box on v0.8.2
+- File paths and component structures match the official repository
+- All Tailwind classes and patterns are standard
+
+**For other versions**:
+- ⚠️ **Older versions (< v0.8.0)**: Component structure and file paths may differ
+- ⚠️ **Newer versions (> v0.8.2)**: Verify file locations and class names before proceeding
+- Always check that the authentication component files exist at the documented paths
+
+**To verify your version**:
+```bash
+# Check package.json version
+cat package.json | grep version
+
+# Or check git commit
+git log --oneline -1
+```
 
 ---
 
@@ -18,10 +42,43 @@ This customization approach:
 - Embeds your custom logo before the frontend build
 - Compiles style changes (like Tailwind classes) into the JavaScript bundles
 - Ensures all customizations persist through Docker rebuilds
+- Works on fresh clones/forks of the official LibreChat repository
+
+### Important Notes for Fresh Installs
+
+1. **No pre-existing customizations required** - These instructions work on a vanilla LibreChat install
+2. **Fork vs Clone** - If deploying to production, fork the repository to your own GitHub account first
+3. **Environment files** - You'll need to create `.env` file with your configuration (see LibreChat docs)
+4. **First-time setup** - Allow extra time for initial Docker build (~10-15 minutes depending on your system)
+5. **Backup recommendation** - If customizing an existing install, commit your current state first
 
 ---
 
-## Step 1: Prepare Your Custom Logo
+## Step 1: Verify File Structure (Fresh Installs)
+
+**For fresh LibreChat installs**, verify that all required files exist before proceeding:
+
+```bash
+# Verify authentication component files
+ls client/src/components/Auth/LoginForm.tsx
+ls client/src/components/Auth/Login.tsx
+ls client/src/components/Auth/Registration.tsx
+ls client/src/components/Auth/Footer.tsx
+ls client/src/components/Auth/RequestPasswordReset.tsx
+ls client/src/components/Auth/ResetPassword.tsx
+
+# Verify Button component
+ls packages/client/src/components/Button.tsx
+
+# Verify Docker files
+ls docker-compose.yml
+```
+
+If all files exist, you're ready to proceed. If any are missing, verify your LibreChat version.
+
+---
+
+## Step 2: Prepare Your Custom Logo
 
 1. Create a `custom-assets` folder in your LibreChat root directory:
    ```powershell
@@ -37,7 +94,9 @@ This customization approach:
 
 ---
 
-## Step 2: Modify the Authentication Layout Styles
+## Step 3: Customize UI Colors and Styles
+
+### 3.1: Modify Logo Size
 
 1. Open the AuthLayout component:
    ```
@@ -61,9 +120,109 @@ This customization approach:
    - `h-32` = 128px
    - `h-40` = 160px
 
+### 3.2: Customize Button Colors
+
+1. Open the Button component:
+   ```
+   packages/client/src/components/Button.tsx
+   ```
+
+2. Locate the `submit` variant in the `buttonVariants` cva (around line 20):
+   ```tsx
+   submit: 'bg-surface-submit text-white hover:bg-surface-submit-hover',
+   ```
+
+3. Replace with custom hex colors:
+   ```tsx
+   submit: 'bg-[#081E3F] text-white hover:bg-[#0a2449]',
+   ```
+   
+   **Example colors**:
+   - `#081E3F` = Dark navy blue
+   - `#0a2449` = Slightly lighter navy for hover state
+
+### 3.3: Customize Link Colors
+
+Update link colors in all authentication components to maintain consistent branding.
+
+**Files to modify**:
+- `client/src/components/Auth/LoginForm.tsx`
+- `client/src/components/Auth/Login.tsx`
+- `client/src/components/Auth/Registration.tsx`
+- `client/src/components/Auth/Footer.tsx`
+- `client/src/components/Auth/RequestPasswordReset.tsx`
+
+**Find and replace** all link color classes:
+
+**Original green classes**:
+```tsx
+className="... text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-400 ..."
+```
+
+**Replace with custom color** (example: golden/bronze `#B6862C`):
+```tsx
+className="... text-[#B6862C] hover:text-[#c99635] dark:text-[#B6862C] dark:hover:text-[#c99635] ..."
+```
+
+**Example from LoginForm.tsx** (Forgot password link):
+```tsx
+<a
+  href="/forgot-password"
+  className="inline-flex p-1 text-sm font-medium text-[#B6862C] underline decoration-transparent transition-all duration-200 hover:text-[#c99635] hover:decoration-[#c99635] focus:text-[#c99635] focus:decoration-[#c99635] dark:text-[#B6862C] dark:hover:text-[#c99635] dark:hover:decoration-[#c99635] dark:focus:text-[#c99635] dark:focus:decoration-[#c99635]"
+>
+  {localize('com_auth_password_forgot')}
+</a>
+```
+
+### 3.4: Customize Input Focus States
+
+Update input field focus border and label colors for consistent branding.
+
+**Files to modify**:
+- `client/src/components/Auth/LoginForm.tsx`
+- `client/src/components/Auth/Registration.tsx`
+- `client/src/components/Auth/ResetPassword.tsx`
+- `client/src/components/Auth/RequestPasswordReset.tsx`
+
+**For input fields**, find:
+```tsx
+className="... focus:border-green-500 ..."
+```
+
+**Replace with**:
+```tsx
+className="... focus:border-[#B6862C] ..."
+```
+
+**For input labels** (peer-focus), find:
+```tsx
+className="... peer-focus:text-green-600 dark:peer-focus:text-green-500 ..."
+```
+
+**Replace with**:
+```tsx
+className="... peer-focus:text-[#B6862C] dark:peer-focus:text-[#B6862C] ..."
+```
+
+**Example from LoginForm.tsx** (Email input):
+```tsx
+<input
+  type="email"
+  id="email"
+  className="webkit-dark-styles transition-color peer w-full rounded-2xl border border-border-light bg-surface-primary px-3.5 pb-2.5 pt-3 text-text-primary duration-200 focus:border-[#B6862C] focus:outline-none"
+  placeholder=" "
+/>
+<label
+  htmlFor="email"
+  className="absolute start-3 top-1.5 z-10 origin-[0] -translate-y-4 scale-75 transform bg-surface-primary px-2 text-sm text-text-secondary-alt duration-200 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-1.5 peer-focus:-translate-y-4 peer-focus:scale-75 peer-focus:px-2 peer-focus:text-[#B6862C] dark:peer-focus:text-[#B6862C] rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4"
+>
+  {localize('com_auth_email_address')}
+</label>
+```
+
 ---
 
-## Step 3: Create Custom Dockerfile
+## Step 4: Create Custom Dockerfile
 
 1. Create a new file named `Dockerfile.logo` in your LibreChat root directory
 
@@ -132,7 +291,7 @@ CMD ["npm", "run", "backend"]
 
 ---
 
-## Step 4: Update docker-compose.yml
+## Step 5: Update docker-compose.yml
 
 1. Open `docker-compose.yml` in your LibreChat root directory
 
@@ -159,7 +318,7 @@ CMD ["npm", "run", "backend"]
 
 ---
 
-## Step 5: Build and Test Locally
+## Step 6: Build and Test Locally
 
 1. Stop any running containers:
    ```powershell
@@ -189,11 +348,11 @@ CMD ["npm", "run", "backend"]
 
 ---
 
-## Step 6: Commit Changes to Git
+## Step 7: Commit Changes to Git
 
 1. Stage your customization files:
    ```powershell
-   git add docker-compose.yml Dockerfile.logo client/src/components/Auth/AuthLayout.tsx custom-assets/logo.svg
+   git add docker-compose.yml Dockerfile.logo custom-assets/logo.svg packages/client/src/components/Button.tsx client/src/components/Auth/LoginForm.tsx client/src/components/Auth/Login.tsx client/src/components/Auth/Registration.tsx client/src/components/Auth/Footer.tsx client/src/components/Auth/RequestPasswordReset.tsx client/src/components/Auth/ResetPassword.tsx
    ```
 
 2. Commit with a descriptive message:
@@ -210,7 +369,7 @@ CMD ["npm", "run", "backend"]
 
 ---
 
-## Step 7: Deploy to Production/Testing Server
+## Step 8: Deploy to Production/Testing Server
 
 1. SSH into your server or access your deployment environment
 
@@ -324,15 +483,25 @@ To add more customizations in the future:
 ```
 LibreChat/
 ├── custom-assets/
-│   └── logo.svg                    # Your custom logo
+│   └── logo.svg                           # Your custom logo
 ├── client/
 │   └── src/
 │       └── components/
 │           └── Auth/
-│               └── AuthLayout.tsx  # Modified with h-40 class
-├── docker-compose.yml              # Updated to use Dockerfile.logo
-├── Dockerfile.logo                 # Custom build with logo injection
-└── .env                           # Your environment configuration
+│               ├── LoginForm.tsx          # Updated: input focus & link colors
+│               ├── Login.tsx              # Updated: link colors
+│               ├── Registration.tsx       # Updated: input focus & link colors
+│               ├── Footer.tsx             # Updated: link colors
+│               ├── RequestPasswordReset.tsx  # Updated: input focus & link colors
+│               └── ResetPassword.tsx      # Updated: input focus colors
+├── packages/
+│   └── client/
+│       └── src/
+│           └── components/
+│               └── Button.tsx             # Updated: submit button color
+├── docker-compose.yml                     # Updated to use Dockerfile.logo
+├── Dockerfile.logo                        # Custom build with logo injection
+└── .env                                   # Your environment configuration
 ```
 
 ---
@@ -345,5 +514,5 @@ LibreChat/
 
 ---
 
-**Last Updated**: February 1, 2026  
+**Last Updated**: February 5, 2026  
 **LibreChat Version**: v0.8.2
