@@ -307,9 +307,15 @@ CMD ["npm", "run", "backend"]
 - `COPY --chown=node:node custom-assets/logo.svg ./client/public/assets/logo.svg` copies your custom logo before the frontend build
 - `COPY --chown=node:node custom-assets/fiu-favcon-270x270.gif ./client/public/assets/favicon.gif` copies your custom favicon
 - The `sed` commands modify `index.html` to:
-  - Change the browser tab title from "LibreChat" to "FIU LibreChat"
+  - Change the browser tab title from "LibreChat" to "PantherAI" (initial HTML title)
   - Replace PNG favicon references with your custom GIF favicon
   - These changes happen before the frontend build, ensuring they persist across rebuilds
+
+**Important**: The HTML title is overridden by the `APP_TITLE` environment variable. You must also update your `.env` file:
+```bash
+APP_TITLE=PantherAI
+```
+This ensures the title remains "PantherAI" after the React app loads. Without this, the title will revert to "LibreChat" after page load.
 
 ---
 
