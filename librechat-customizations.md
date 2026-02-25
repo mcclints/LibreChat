@@ -66,6 +66,7 @@ ls client/src/components/Auth/Registration.tsx
 ls client/src/components/Auth/Footer.tsx
 ls client/src/components/Auth/RequestPasswordReset.tsx
 ls client/src/components/Auth/ResetPassword.tsx
+ls client/src/components/Auth/AuthLayout.tsx
 
 # Verify Button component
 ls packages/client/src/components/Button.tsx
@@ -91,6 +92,13 @@ If all files exist, you're ready to proceed. If any are missing, verify your Lib
    ```
    
    **Note**: The logo should be named `logo.svg` and be in SVG format for best results.
+
+3. Place your custom favicon file in the same folder:
+   ```
+   custom-assets/fiu-favcon-270x270.gif
+   ```
+   
+   **Note**: The favicon can be in GIF, PNG, or ICO format. The filename will be referenced in the Dockerfile.
 
 ---
 
@@ -275,6 +283,14 @@ COPY --chown=node:node . .
 # Copy custom logo BEFORE building frontend (this replaces the default logo)
 COPY --chown=node:node custom-assets/logo.svg ./client/public/assets/logo.svg
 
+# Copy custom favicon (replace LibreChat favicons with FIU favicon)
+COPY --chown=node:node custom-assets/fiu-favcon-270x270.gif ./client/public/assets/favicon.gif
+
+# Update browser tab title and favicon references in index.html
+RUN sed -i 's/<title>LibreChat<\/title>/<title>FIU LibreChat<\/title>/' ./client/index.html && \
+    sed -i 's|<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />|<link rel="icon" type="image/gif" href="assets/favicon.gif" />|' ./client/index.html && \
+    sed -i 's|<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />||' ./client/index.html
+
 RUN \
     # React client build with configurable memory (includes AuthLayout.tsx h-40 customization)
     NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npm run frontend; \
@@ -287,7 +303,13 @@ ENV HOST=0.0.0.0
 CMD ["npm", "run", "backend"]
 ```
 
-**Key section**: The line `COPY --chown=node:node custom-assets/logo.svg ./client/public/assets/logo.svg` copies your custom logo before the frontend build, ensuring it gets compiled into the final assets.
+**Key sections**: 
+- `COPY --chown=node:node custom-assets/logo.svg ./client/public/assets/logo.svg` copies your custom logo before the frontend build
+- `COPY --chown=node:node custom-assets/fiu-favcon-270x270.gif ./client/public/assets/favicon.gif` copies your custom favicon
+- The `sed` commands modify `index.html` to:
+  - Change the browser tab title from "LibreChat" to "FIU LibreChat"
+  - Replace PNG favicon references with your custom GIF favicon
+  - These changes happen before the frontend build, ensuring they persist across rebuilds
 
 ---
 
@@ -488,7 +510,8 @@ To add more customizations in the future:
 ```
 LibreChat/
 ├── custom-assets/
-│   └── logo.svg                           # Your custom logo
+│   ├── logo.svg                           # Your custom logo
+│   └── fiu-favcon-270x270.gif             # Your custom favicon
 ├── client/
 │   └── src/
 │       └── components/
