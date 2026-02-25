@@ -44,6 +44,14 @@ COPY --chown=node:node . .
 # Copy custom logo BEFORE building frontend (this replaces the default logo)
 COPY --chown=node:node custom-assets/logo.svg ./client/public/assets/logo.svg
 
+# Copy custom favicon (replace LibreChat favicons with FIU favicon)
+COPY --chown=node:node custom-assets/fiu-favcon-270x270.gif ./client/public/assets/favicon.gif
+
+# Update browser tab title and favicon references in index.html
+RUN sed -i 's/<title>LibreChat<\/title>/<title>FIU LibreChat<\/title>/' ./client/index.html && \
+    sed -i 's|<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />|<link rel="icon" type="image/gif" href="assets/favicon.gif" />|' ./client/index.html && \
+    sed -i 's|<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />||' ./client/index.html
+
 RUN \
     # React client build with configurable memory (includes AuthLayout.tsx h-40 customization)
     NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}" npm run frontend; \
