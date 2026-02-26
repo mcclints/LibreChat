@@ -287,7 +287,7 @@ COPY --chown=node:node custom-assets/logo.svg ./client/public/assets/logo.svg
 COPY --chown=node:node custom-assets/fiu-favcon-270x270.gif ./client/public/assets/favicon.gif
 
 # Update browser tab title and favicon references in index.html
-RUN sed -i 's/<title>LibreChat<\/title>/<title>FIU LibreChat<\/title>/' ./client/index.html && \
+RUN sed -i 's/<title>LibreChat<\/title>/<title>PantherAI<\/title>/' ./client/index.html && \
     sed -i 's|<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />|<link rel="icon" type="image/gif" href="assets/favicon.gif" />|' ./client/index.html && \
     sed -i 's|<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />||' ./client/index.html
 
@@ -541,6 +541,187 @@ LibreChat/
 
 ---
 
+## Step 9: Configure SAML Authentication (Optional)
+
+LibreChat supports SAML 2.0 authentication for enterprise single sign-on (SSO) integration.
+
+### Prerequisites
+
+- Access to your organization's SAML Identity Provider (IdP)
+- SAML metadata from your IdP (Entry Point, Issuer, Certificate)
+- Admin access to configure SAML in your IdP
+
+### SAML Configuration Steps
+
+#### 1. Obtain SAML Metadata from Your Identity Provider
+
+You'll need the following information from your SAML IdP:
+
+- **Entry Point URL**: The SSO URL where LibreChat will redirect users for authentication
+- **Issuer**: The unique identifier for your IdP (Entity ID)
+- **Certificate**: The X.509 certificate used to verify SAML responses
+
+**Common Identity Providers**:
+- **Azure AD**: Azure Portal → Enterprise Applications → Your App → Single sign-on
+- **Okta**: Admin Console → Applications → Your App → Sign On → View Setup Instructions
+- **Google Workspace**: Admin Console → Apps → SAML apps → Your App
+
+#### 2. Configure LibreChat in Your Identity Provider
+
+In your IdP, create a new SAML application with these settings:
+
+**Service Provider (SP) Configuration**:
+- **Entity ID / Audience**: `http://your-domain.com` (or your `DOMAIN_SERVER` value)
+- **ACS URL / Callback URL**: `http://your-domain.com/oauth/saml/callback`
+- **Name ID Format**: Email Address (recommended)
+
+**Attribute Mappings** (configure these in your IdP):
+- `email` → User's email address
+- `username` → User's username (optional)
+- `givenName` → User's first name (optional)
+- `familyName` → User's last name (optional)
+- `name` → User's full name (optional)
+- `picture` → User's profile picture URL (optional)
+
+#### 3. Update LibreChat Environment Variables
+
+Edit your `.env` file and configure the SAML settings:
+
+```bash
+# SAML Authentication
+# Note: If OpenID is enabled, SAML authentication will be automatically disabled.
+SAML_ENTRY_POINT=https://your-idp.com/saml/sso
+SAML_ISSUER=http://your-domain.com
+SAML_CERT="-----BEGIN CERTIFICATE-----\nMIIC...your certificate...\n-----END CERTIFICATE-----"
+SAML_CALLBACK_URL=/oauth/saml/callback
+SAML_SESSION_SECRET=your-random-secret-string-here
+
+# Attribute mappings (optional - adjust based on your IdP's attribute names)
+SAML_EMAIL_CLAIM=email
+SAML_USERNAME_CLAIM=username
+SAML_GIVEN_NAME_CLAIM=givenName
+SAML_FAMILY_NAME_CLAIM=familyName
+SAML_PICTURE_CLAIM=picture
+SAML_NAME_CLAIM=name
+
+# Login button settings (optional)
+SAML_BUTTON_LABEL="Sign in with SSO"
+SAML_IMAGE_URL=/path/to/your/sso-logo.png
+
+# Whether the SAML Response should be signed (optional)
+# - If "true", the entire SAML Response will be signed.
+# - If "false" or unset, only the SAML Assertion will be signed (default behavior).
+# SAML_USE_AUTHN_RESPONSE_SIGNED=false
+```
+
+**Important Notes**:
+- `SAML_SESSION_SECRET`: Generate a strong random string (e.g., using `openssl rand -base64 32`)
+- `SAML_CERT`: Must include the full certificate with `-----BEGIN CERTIFICATE-----` and `-----END CERTIFICATE-----` headers
+- Certificate newlines should be escaped as `\n` in the .env file
+- `DOMAIN_SERVER` must match your IdP's configured Entity ID
+
+#### 4. Enable SAML in librechat.yaml
+
+Edit your `librechat.yaml` file to enable SAML as a social login option:
+
+```yaml
+registration:
+  socialLogins: ['saml']
+  # Or include with other providers:
+  # socialLogins: ['github', 'google', 'saml']
+```
+
+#### 5. Restart LibreChat
+
+After configuring SAML, restart your containers:
+
+```bash
+docker compose restart api
+```
+
+Or for a full restart:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+#### 6. Test SAML Authentication
+
+1. Navigate to your LibreChat login page
+2. You should see a "Sign in with SSO" button (or your custom label)
+3. Click the button to be redirected to your IdP
+4. Authenticate with your IdP credentials
+5. You should be redirected back to LibreChat and logged in
+
+### Troubleshooting SAML
+
+#### "SAML authentication failed" Error
+
+**Possible causes**:
+- Certificate mismatch or incorrect format
+- Entry Point URL is incorrect
+- Callback URL not configured correctly in IdP
+
+**Solutions**:
+- Verify certificate includes proper headers and escaped newlines
+- Check IdP logs for detailed error messages
+- Ensure `DOMAIN_SERVER` matches your IdP's Entity ID configuration
+
+#### Users Can't Log In After SAML Setup
+
+**Possible causes**:
+- Attribute mappings don't match IdP's attribute names
+- Email claim not being sent by IdP
+
+**Solutions**:
+- Check IdP's attribute mapping configuration
+- Verify `SAML_EMAIL_CLAIM` matches the attribute name your IdP sends
+- Review LibreChat logs: `docker compose logs api | grep -i saml`
+
+#### SAML Button Not Appearing
+
+**Possible causes**:
+- SAML not enabled in `librechat.yaml`
+- OpenID is enabled (SAML is disabled when OpenID is active)
+- Missing required SAML environment variables
+
+**Solutions**:
+- Verify `socialLogins` includes `'saml'` in `librechat.yaml`
+- Disable OpenID if you want to use SAML
+- Check that `SAML_ENTRY_POINT`, `SAML_ISSUER`, and `SAML_CERT` are all set
+
+### Security Best Practices
+
+1. **Always use HTTPS in production** - SAML should never be used over HTTP in production environments
+2. **Rotate session secrets regularly** - Update `SAML_SESSION_SECRET` periodically
+3. **Verify certificate validity** - Ensure your IdP's certificate hasn't expired
+4. **Use signed responses** - Set `SAML_USE_AUTHN_RESPONSE_SIGNED=true` for enhanced security
+5. **Restrict access by domain** - Use `allowedDomains` in `librechat.yaml` to limit registration to specific email domains
+
+### Example: Azure AD SAML Configuration
+
+**In Azure AD**:
+1. Azure Portal → Enterprise Applications → New Application → Create your own application
+2. Select "Integrate any other application you don't find in the gallery (Non-gallery)"
+3. Go to Single sign-on → SAML
+4. Set:
+   - **Identifier (Entity ID)**: `https://your-domain.com`
+   - **Reply URL (ACS URL)**: `https://your-domain.com/oauth/saml/callback`
+5. Download the Certificate (Base64)
+6. Copy the Login URL (this is your `SAML_ENTRY_POINT`)
+
+**In LibreChat .env**:
+```bash
+SAML_ENTRY_POINT=https://login.microsoftonline.com/your-tenant-id/saml2
+SAML_ISSUER=https://your-domain.com
+SAML_CERT="-----BEGIN CERTIFICATE-----\nMIIC8DCCAdigAwIBAgIQFE...\n-----END CERTIFICATE-----"
+SAML_EMAIL_CLAIM=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress
+SAML_NAME_CLAIM=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name
+```
+
+---
+
 ## Additional Resources
 
 - [LibreChat Documentation](https://www.librechat.ai/docs)
@@ -549,5 +730,26 @@ LibreChat/
 
 ---
 
-**Last Updated**: February 5, 2026  
+**Last Updated**: February 26, 2026  
 **LibreChat Version**: v0.8.2
+
+---
+
+## Changelog
+
+### February 26, 2026
+- Added comprehensive SAML authentication configuration section
+- Updated browser tab title example to "PantherAI"
+- Added APP_TITLE environment variable documentation
+- Clarified favicon and title customization requirements
+
+### February 25, 2026
+- Added favicon customization instructions
+- Added browser tab title customization
+- Documented APP_TITLE environment variable requirement
+
+### February 5, 2026
+- Initial documentation created
+- Logo customization
+- UI color customizations (buttons, links, input focus states)
+- Docker Compose override approach
