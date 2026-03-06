@@ -9,10 +9,133 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.logo
+    env_file:
+      - .env
     volumes:
       - type: bind
         source: ./librechat.yaml
         target: /app/librechat.yaml
+      - type: bind
+        source: C:/Users/saulm/Projects
+        target: /workspace
+
+  litellm-db:
+    container_name: litellm-db
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm-password
+    volumes:
+      - litellm-pgdata:/var/lib/postgresql/data
+
+  redis:
+    container_name: litellm-redis
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - litellm-redis-data:/data
+
+  langfuse-db:
+    container_name: langfuse-db
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: langfuse
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse-password
+    volumes:
+      - langfuse-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  langfuse:
+    container_name: langfuse
+    image: ghcr.io/langfuse/langfuse:2
+    restart: always
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://langfuse:langfuse-password@langfuse-db:5432/langfuse
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: "langfuse-nextauth-secret-local"
+      SALT: "langfuse-salt-local"
+      TELEMETRY_ENABLED: "false"
+
+  litellm:
+    container_name: LiteLLM
+    image: litellm/litellm:v1.81.14.rc.2
+    restart: always
+    depends_on:
+      - litellm-db
+      - redis
+      - langfuse
+    environment:
+      DATABASE_URL: postgresql://litellm:litellm-password@litellm-db:5432/litellm
+      LITELLM_MASTER_KEY: sk-litellm-local
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LANGFUSE_PUBLIC_KEY: "pk-lf-05f2f22e-8e59-4c92-ae69-9b6075fbfcfa"       # add after creating project in Langfuse UI
+      LANGFUSE_SECRET_KEY: "sk-lf-83edd4ab-f12d-45b1-a243-9402c2389231"       # add after creating project in Langfuse UI
+      LANGFUSE_HOST: "http://langfuse:3000"
+      PYTHONPATH: "/app"
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml
+      - ./router_hook.py:/app/router_hook.py
+    ports:
+      - "4000:4000"
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  searxng:
+    container_name: searxng
+    image: searxng/searxng:latest
+    restart: always
+    volumes:
+      - ./searxng:/etc/searxng:rw
+    ports:
+      - "8080:8080"
+    environment:
+      SEARXNG_BASE_URL: "http://localhost:8080/"
+
+  flowise:
+    container_name: flowise
+    image: flowiseai/flowise:latest
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - flowise-data:/root/.flowise
+    environment:
+      PORT: "3001"
+      FLOWISE_USERNAME: admin
+      FLOWISE_PASSWORD: admin
+      DEBUG: "true"
+      LOG_LEVEL: debug
+
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    restart: always
+    ports:
+      - "8888:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  litellm-pgdata:
+  litellm-redis-data:
+  langfuse-pgdata:
+  flowise-data:
 
 
 # services:
